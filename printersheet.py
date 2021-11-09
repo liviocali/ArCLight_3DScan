@@ -175,10 +175,11 @@ def mymain():
     while x < 323.5 and y < 333.5:
         while x < 323.5:
             stepcounter+=1
-            print("Step X:"+str(x)+' Y:'+)
+            #print("Step X:"+str(x)+' Y:'+)!!!
             x += stepsize
             goto(x,y,z)
             filename = startdaq()
+            wrtiefile(x,y,z,filename)
             time.sleep(2)
         x = 333.5
         y += stepsize
@@ -188,9 +189,16 @@ def mymain():
             print("Step X:"+str(x)+' Y:'+)
             goto(x,y,z)
             filename = startdaq()
+            wrtiefile(x,y,z,filename)
             time.sleep(2)
         x = 33.5
         y += stepsize
+
+def writefile(x,y,z,filename):
+    f = open("data_position.log","a")
+    f.write(str(x)+' '+str(y)+' '+str(z)+' '+filename+'\n')
+
+
 
 if __name__=='__main__':
     mymain()
