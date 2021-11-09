@@ -185,6 +185,7 @@ def mymain():
 
         while x > 43.5:
             x -= stepsize            
+            print("Step X:"+str(x)+' Y:'+)
             goto(x,y,z)
             filename = startdaq()
             time.sleep(2)
