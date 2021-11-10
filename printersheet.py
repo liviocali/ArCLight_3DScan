@@ -4,9 +4,15 @@ import argparse
 import subprocess
 
 # Open serial port
-#s = serial.Serial('/dev/tty.usbserial-AG0K0EZI',115200)
-s = serial.Serial('/dev/ttyUSB0',115200)
+s = serial.Serial('/dev/tty.usbserial-AG0K0EZI',115200)
+#s = serial.Serial('/dev/ttyUSB0',115200)
 print('Opening Serial Port')
+
+tilesizex = 300
+tilesizey = 280
+stepsize = 10 
+offsetx = 38 # Corner of the printerhead aligned with corner of the tile
+offsety = 74 # Corner of the printerhead aligned with corner of the tile
 
 def removeComment(string):
 	if (string.find(';')==-1):
@@ -156,48 +162,50 @@ def goto(x,y,z):
     print(' : ' + grbl_out.strip())#print the feedback
 
 def startdaq():
-    f = open("/data/LRS/acl_teststand/3dscan/mylog.log","w")
-    subprocess.call(["afi-adc64-system","--cli_mode","--data_dir","/data/LRS/acl_teststand/3dscan","--event_number","1000"],stderr=f)
+   f = open("/data/LRS/acl_teststand/3dscan/mylog.log","w")
+   subprocess.call(["afi-adc64-system","--cli_mode","--data_dir","/data/LRS/acl_teststand/3dscan","--event_number","1000"],stderr=f)
     out = subprocess.check_output("grep \"MStreamFileWriter opened file: /data/LRS/acl_teststand/3dscan/\" /data/LRS/acl_teststand/3dscan/mylog.log | cut -c63-",shell=True)
     return out[:-1].decode()
 
 def mymain():
     print("Start initialisation")
     mycodesender('init.g')
-    #time.sleep(50)
+    #time.sleep(30)
     print("Initialisation over\n Ready\n")
-    stepsize = 10
-    x = 33.5
-    y = 43.5
+    xmax = offsetx + tilesizex
+    ymax = offsety + tilesizey
+    xmin = offsetx
+    x = offsetx+stepsize
+    y = offsety+stepsize
     z = 20
     stepcounter=0
-    nsteps = int((int(323.5-x)/int(stepsize)) * (int(333.5-y)/int(stepsize)))
-    while x < 323.5 and y < 333.5:
-        while x < 323.5:
+    nsteps = int((int(xmax-x)/int(stepsize)) * (int(ymax-y)/int(stepsize)))
+    while x < xmax and y < ymax:
+        while x < xmax:
             stepcounter+=1
-            print("Step X:"+str(x)+' Y:'+str(y)+' Z:'+str(z)+' Step:'+str(stepcounter)+'/'+str(nsteps))
-            x += stepsize
+            print("Step X:"+str(x-offsetx)+' Y:'+str(y-offsety)+' Z:'+str(z)+' Step:'+str(stepcounter)+'/'+str(nsteps))
             goto(x,y,z)
-            filename = startdaq()
-            writefile(x,y,z,filename)
+            #filename = startdaq()
+            #writefile(x,y,z,filename)
             time.sleep(2)
-        x = 333.5
+            x += stepsize
+        x = xmax - 10
         y += stepsize
 
-        while x > 43.5:
-            stepcounter+=1
-            print("Step X:"+str(x)+' Y:'+str(y)+' Z:'+str(z)+' Step:'+str(stepcounter)+'/'+str(nsteps))
-            x -= stepsize            
+        while x > xmin:
+            stepcounter+=1 
+            print("Step X:"+str(x-offsetx)+' Y:'+str(y-offsety)+' Z:'+str(z)+' Step:'+str(stepcounter)+'/'+str(nsteps))         
             goto(x,y,z)
-            filename = startdaq()
-            writefile(x,y,z,filename)
+            #filename = startdaq()
+            #writefile(x,y,z,filename)
             time.sleep(2)
-        x = 33.5
+            x -= stepsize
+        x = xmin + 10
         y += stepsize
 
 def writefile(x,y,z,filename):
     f = open("data_position.log","a")
-    f.write(str(x)+' '+str(y)+' '+str(z)+' '+filename+'\n')
+    f.write(str(x-offsetx)+' '+str(y-offsety)+' '+str(z)+' '+filename+'\n')
     f.close()
 
 
