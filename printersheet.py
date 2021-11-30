@@ -4,8 +4,8 @@ import argparse
 import subprocess
 
 # Open serial port
-s = serial.Serial('/dev/tty.usbserial-AG0K0EZI',115200)
-#s = serial.Serial('/dev/ttyUSB0',115200)
+#s = serial.Serial('/dev/tty.usbserial-AG0K0EZI',115200)
+s = serial.Serial('/dev/ttyUSB0',115200)
 print('Opening Serial Port')
 
 tilesizex = 300
