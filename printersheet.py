@@ -11,8 +11,9 @@ print('Opening Serial Port')
 tilesizex = 300
 tilesizey = 280
 stepsize = 10 
-offsetx = 38 # Corner of the printerhead aligned with corner of the tile
-offsety = 74 # Corner of the printerhead aligned with corner of the tile
+offsetx = 10 # Corner of the printerhead aligned with corner of the tile
+offsety = 65 # Corner of the printerhead aligned with corner of the tile
+offsetz = 5
 
 def removeComment(string):
 	if (string.find(';')==-1):
@@ -162,22 +163,24 @@ def goto(x,y,z):
     print(' : ' + grbl_out.strip())#print the feedback
 
 def startdaq():
-   f = open("/data/LRS/acl_teststand/3dscan/mylog.log","w")
-   subprocess.call(["afi-adc64-system","--cli_mode","--data_dir","/data/LRS/acl_teststand/3dscan","--event_number","1000"],stderr=f)
+    f = open("/data/LRS/acl_teststand/3dscan/mylog.log","w")
+    subprocess.call(["afi-adc64-system","--cli_mode","--data_dir","/data/LRS/acl_teststand/3dscan","--event_number","1000"],stderr=f)
     out = subprocess.check_output("grep \"MStreamFileWriter opened file: /data/LRS/acl_teststand/3dscan/\" /data/LRS/acl_teststand/3dscan/mylog.log | cut -c63-",shell=True)
     return out[:-1].decode()
 
 def mymain():
     print("Start initialisation")
     mycodesender('init.g')
-    #time.sleep(30)
-    print("Initialisation over\n Ready\n")
+    time.sleep(30)
     xmax = offsetx + tilesizex
     ymax = offsety + tilesizey
     xmin = offsetx
     x = offsetx+stepsize
     y = offsety+stepsize
-    z = 20
+    z = offsetz
+    goto(x,y,z)
+    time.sleep(10)
+    print("Initialisation over\n Ready\n")
     stepcounter=0
     nsteps = int((int(xmax-x)/int(stepsize)) * (int(ymax-y)/int(stepsize)))
     while x < xmax and y < ymax:
