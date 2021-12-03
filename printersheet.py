@@ -1,5 +1,5 @@
 import serial
-import time
+import time, datetime
 import argparse
 import subprocess
 
@@ -12,8 +12,8 @@ tilesizex = 300
 tilesizey = 280
 stepsize = 10 
 offsetx = 10 # Corner of the printerhead aligned with corner of the tile
-offsety = 65 # Corner of the printerhead aligned with corner of the tile
-offsetz = 5
+offsety = 85 # Corner of the printerhead aligned with corner of the tile
+offsetz = 20
 
 def removeComment(string):
 	if (string.find(';')==-1):
@@ -142,15 +142,16 @@ def mycodesender(mygcode):#Chose wich gcode file you want to send, first initial
     		time.sleep(1)
     		s.write(l.encode()) # Send g-code block
     		time.sleep(1)
-    		grbl_out = s.readline() # Wait for response with carriage return
-    		grbl_out = grbl_out.decode()
-    		print(' : ' + grbl_out.strip())
+    		while s.in_waiting >0:
+    			grbl_out = s.readline() # Wait for response with carriage return
+    			grbl_out = grbl_out.decode()
+    			print(' : ' + grbl_out.strip())
 
 
-    #Close file and serial port
+    #Close file
     f.close()
-    time_end = time.time() + 20
-    while time.time()<time_end:
+    time.sleep(3)
+    while s.in_waiting >0:
     	grbl_out = s.readline() # Wait for response with carriage return
     	grbl_out = grbl_out.decode()
     	print(' : ' + grbl_out.strip())
@@ -162,16 +163,13 @@ def goto(x,y,z):
     grbl_out = grbl_out.decode()
     print(' : ' + grbl_out.strip())#print the feedback
 
-def startdaq():
-    f = open("/data/LRS/acl_teststand/3dscan/mylog.log","w")
-    subprocess.call(["afi-adc64-system","--cli_mode","--data_dir","/data/LRS/acl_teststand/3dscan","--event_number","1000"],stderr=f)
-    out = subprocess.check_output("grep \"MStreamFileWriter opened file: /data/LRS/acl_teststand/3dscan/\" /data/LRS/acl_teststand/3dscan/mylog.log | cut -c63-",shell=True)
-    return out[:-1].decode()
-
 def mymain():
     print("Start initialisation")
+    mycodesender("preinit.g")
+    time.sleep(10)
     mycodesender('init.g')
-    time.sleep(30)
+    print("Wait 30s")
+    time.sleep(25)
     xmax = offsetx + tilesizex
     ymax = offsety + tilesizey
     xmin = offsetx
@@ -180,31 +178,48 @@ def mymain():
     z = offsetz
     goto(x,y,z)
     time.sleep(10)
+
+    while s.in_waiting >0:
+    	grbl_out = s.readline() # Wait for response with carriage return
+    	grbl_out = grbl_out.decode()
+    	print(' : ' + grbl_out.strip())
+
     print("Initialisation over\n Ready\n")
+    input("Press Enter to start data taking")
     stepcounter=0
-    nsteps = int((int(xmax-x)/int(stepsize)) * (int(ymax-y)/int(stepsize)))
+    nsteps = int((int(xmax-offsetx)/int(stepsize)-1) * (int(ymax-offsety)/int(stepsize)-1))
     while x < xmax and y < ymax:
         while x < xmax:
             stepcounter+=1
-            print("Step X:"+str(x-offsetx)+' Y:'+str(y-offsety)+' Z:'+str(z)+' Step:'+str(stepcounter)+'/'+str(nsteps))
+            print("Step X:"+str(x-offsetx)+' Y:'+str(y-offsety)+' Z:'+str(z)+' Step:'+str(stepcounter)+'/'+str(nsteps),end=" ")
+            if stepcounter==1:
+            	start_time = time.time()
+            else:
+            	print("Time remaining: "+time.strftime("%H:%M:%S",time.gmtime(steptime*(nsteps-stepcounter))))
             goto(x,y,z)
+            time.sleep(2)
             #filename = startdaq()
             #writefile(x,y,z,filename)
-            time.sleep(2)
             x += stepsize
+            if stepcounter==1:
+            	end_time = time.time()
+            	steptime = end_time-start_time
         x = xmax - 10
         y += stepsize
 
         while x > xmin:
             stepcounter+=1 
-            print("Step X:"+str(x-offsetx)+' Y:'+str(y-offsety)+' Z:'+str(z)+' Step:'+str(stepcounter)+'/'+str(nsteps))         
+            print("Step X:"+str(x-offsetx)+' Y:'+str(y-offsety)+' Z:'+str(z)+' Step:'+str(stepcounter)+'/'+str(nsteps),end=" ")
+            print("Time remaining: "+time.strftime("%H:%M:%S",time.gmtime(steptime*(nsteps-stepcounter))))         
             goto(x,y,z)
+            time.sleep(2)
             #filename = startdaq()
             #writefile(x,y,z,filename)
-            time.sleep(2)
             x -= stepsize
         x = xmin + 10
         y += stepsize
+    print("Scan finished in "+time.strftime("%H:%M:%S",time.gmtime(time.time()-start_time)))    
+    goto(x,y,200)
 
 def writefile(x,y,z,filename):
     f = open("data_position.log","a")
