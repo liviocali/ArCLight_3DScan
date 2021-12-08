@@ -163,6 +163,12 @@ def goto(x,y,z):
     grbl_out = grbl_out.decode()
     print(' : ' + grbl_out.strip())#print the feedback
 
+def startdaq():
+    f = open("/data/3dscan/mylog.log","w")
+    subprocess.call(["/home/lhep/afi-adc64-without-watchdog/build/adc64-system/afi-adc64-system","--cli_mode","--data_dir","/data/3dscan","--event_number","15000"],stderr=f)
+    out = subprocess.check_output("grep \"MStreamFileWriter opened file: /data/3dscan/\" /data/3dscan/mylog.log | tail -c 30",shell=True)
+    return out[:-1].decode()
+
 def mymain():
     print("Start initialisation")
     mycodesender("preinit.g")
@@ -200,8 +206,8 @@ def mymain():
             print("Turning off motor for data taking")
             mycodesender("stopmotor.g")
             time.sleep(2)
-            #filename = startdaq()
-            #writefile(x,y,z,filename)
+            filename = startdaq()
+            writefile(x,y,z,filename)
             x += stepsize
             if stepcounter==1:
             	end_time = time.time()
@@ -217,8 +223,8 @@ def mymain():
             print("Turning off motor for data taking")
             mycodesender("stopmotor.g")
             time.sleep(2)
-            #filename = startdaq()
-            #writefile(x,y,z,filename)
+            filename = startdaq()
+            writefile(x,y,z,filename)
             x -= stepsize
         x = xmin + 10
         y += stepsize
