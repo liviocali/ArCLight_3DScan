@@ -10,7 +10,7 @@ print('Opening Serial Port')
 
 tilesizex = 300
 tilesizey = 280
-stepsize = 10 
+stepsize = 20 
 offsetx = 10 # Corner of the printerhead aligned with corner of the tile
 offsety = 85 # Corner of the printerhead aligned with corner of the tile
 offsetz = 20
@@ -193,7 +193,7 @@ def mymain():
     print("Initialisation over\n Ready\n")
     input("Press Enter to start data taking")
     stepcounter=0
-    nsteps = int((int(xmax-offsetx)/int(stepsize)-1) * (int(ymax-offsety)/int(stepsize)-1))
+    nsteps = (int(tilesizex/stepsize)-1) * (int(tilesizey/stepsize)-1)
     while x < xmax and y < ymax:
         while x < xmax:
             stepcounter+=1
@@ -212,7 +212,7 @@ def mymain():
             if stepcounter==1:
             	end_time = time.time()
             	steptime = end_time-start_time
-        x = xmax - 10
+        x -= stepsize
         y += stepsize
 
         while x > xmin:
@@ -226,10 +226,10 @@ def mymain():
             filename = startdaq()
             writefile(x,y,z,filename)
             x -= stepsize
-        x = xmin + 10
+        x += stepsize
         y += stepsize
     print("Scan finished in "+time.strftime("%H:%M:%S",time.gmtime(time.time()-start_time)))    
-    goto(x,y,200)
+    goto(x,y,100)
 
 def writefile(x,y,z,filename):
     f = open("data_position.log","a")
