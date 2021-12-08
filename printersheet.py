@@ -197,6 +197,8 @@ def mymain():
             else:
             	print("Time remaining: "+time.strftime("%H:%M:%S",time.gmtime(steptime*(nsteps-stepcounter))))
             goto(x,y,z)
+            print("Turning off motor for data taking")
+            mycodesender("stopmotor.g")
             time.sleep(2)
             #filename = startdaq()
             #writefile(x,y,z,filename)
@@ -212,6 +214,8 @@ def mymain():
             print("Step X:"+str(x-offsetx)+' Y:'+str(y-offsety)+' Z:'+str(z)+' Step:'+str(stepcounter)+'/'+str(nsteps),end=" ")
             print("Time remaining: "+time.strftime("%H:%M:%S",time.gmtime(steptime*(nsteps-stepcounter))))         
             goto(x,y,z)
+            print("Turning off motor for data taking")
+            mycodesender("stopmotor.g")
             time.sleep(2)
             #filename = startdaq()
             #writefile(x,y,z,filename)
