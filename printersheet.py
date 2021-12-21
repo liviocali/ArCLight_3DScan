@@ -2,6 +2,7 @@ import serial
 import time, datetime
 import argparse
 import subprocess
+import os
 
 # Open serial port
 #s = serial.Serial('/dev/tty.usbserial-AG0K0EZI',115200)
@@ -10,7 +11,7 @@ print('Opening Serial Port')
 
 tilesizex = 300
 tilesizey = 280
-stepsize = 20 
+stepsize = 10 
 offsetx = 10 # Corner of the printerhead aligned with corner of the tile
 offsety = 85 # Corner of the printerhead aligned with corner of the tile
 offsetz = 20
@@ -166,8 +167,13 @@ def goto(x,y,z):
 def startdaq():
     f = open("/data/3dscan/mylog.log","w")
     subprocess.call(["/home/lhep/afi-adc64-without-watchdog/build/adc64-system/afi-adc64-system","--cli_mode","--data_dir","/data/3dscan","--event_number","15000"],stderr=f)
-    out = subprocess.check_output("grep \"MStreamFileWriter opened file: /data/3dscan/\" /data/3dscan/mylog.log | tail -c 30",shell=True)
-    return out[:-1].decode()
+    out = subprocess.check_output("grep \"MStreamFileWriter opened file: /data/3dscan/\" /data/3dscan/mylog.log | tail -c 30",shell=True)[:-1].decode()
+    while(not subprocess.call("grep \"AdcSelfTest failed\" /data/3dscan/mylog.log",shell=True,stdout=subprocess.DEVNULL)):
+        os.remove("/data/3dscan/"+str(out))
+        f.truncate(0)
+        subprocess.call(["/home/lhep/afi-adc64-without-watchdog/build/adc64-system/afi-adc64-system","--cli_mode","--data_dir","/data/3dscan","--event_number","15000"],stderr=f)
+        out = subprocess.check_output("grep \"MStreamFileWriter opened file: /data/3dscan/\" /data/3dscan/mylog.log | tail -c 30",shell=True)[:-1].decode()
+    return out
 
 def mymain():
     print("Start initialisation")
