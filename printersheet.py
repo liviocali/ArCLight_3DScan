@@ -167,12 +167,13 @@ def goto(x,y,z):
 def startdaq():
     f = open("/data/3dscan/mylog.log","w")
     subprocess.call(["/home/lhep/afi-adc64-without-watchdog/build/adc64-system/afi-adc64-system","--cli_mode","--data_dir","/data/3dscan","--event_number","15000"],stderr=f)
-    out = subprocess.check_output("grep \"MStreamFileWriter opened file: /data/3dscan/\" /data/3dscan/mylog.log | tail -c 30",shell=True)[:-1].decode()
-    while(not subprocess.call("grep \"AdcSelfTest failed\" /data/3dscan/mylog.log",shell=True,stdout=subprocess.DEVNULL)):
+    out = subprocess.check_output("grep -a \"MStreamFileWriter opened file: /data/3dscan/\" /data/3dscan/mylog.log | tail -c 30",shell=True)[:-1].decode()
+    while(not subprocess.call("grep \"AdcSelfTest failed\" /data/3dscan/mylog.log",shell=True,stdout=subprocess.DEVNULL,stderr=subprocess.DEVNULL)):
         os.remove("/data/3dscan/"+str(out))
-        f.truncate(0)
+        f.close()
+        f = open("/data/3dscan/mylog.log","w")
         subprocess.call(["/home/lhep/afi-adc64-without-watchdog/build/adc64-system/afi-adc64-system","--cli_mode","--data_dir","/data/3dscan","--event_number","15000"],stderr=f)
-        out = subprocess.check_output("grep \"MStreamFileWriter opened file: /data/3dscan/\" /data/3dscan/mylog.log | tail -c 30",shell=True)[:-1].decode()
+        out = subprocess.check_output("grep -a \"MStreamFileWriter opened file: /data/3dscan/\" /data/3dscan/mylog.log | tail -c 30",shell=True)[:-1].decode()
     return out
 
 def mymain():
