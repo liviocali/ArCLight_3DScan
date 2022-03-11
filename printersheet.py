@@ -6,7 +6,7 @@ import os
 
 # Open serial port
 #s = serial.Serial('/dev/tty.usbserial-AG0K0EZI',115200)
-s = serial.Serial('/dev/ttyUSB0',115200)
+s = serial.Serial('/dev/ttyUSB1',115200)
 print('Opening Serial Port')
 
 tilesizex = 300
