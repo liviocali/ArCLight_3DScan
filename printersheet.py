@@ -11,6 +11,7 @@ usb_port = subprocess.check_output(['ls /dev/ttyUSB*'],shell=True).decode().stri
 s = serial.Serial(usb_port,115200)
 print('Opening Serial Port')
 
+newreadout = True #Set if new or  old readout used
 tilesizex = 300
 tilesizey = 280
 ngridx = 14
@@ -18,6 +19,9 @@ stepsize = tilesizey/ngridx
 offsetx = 5 # Corner of the printerhead aligned with corner of the tile
 offsety = 50 # Corner of the printerhead aligned with corner of the tile
 offsetz = 185
+data_path = '/data/LRS/acl_teststand/3dscan/data_files'
+data_taking_time = 15 #wait time for one data run
+
 
 def removeComment(string):
     if (string.find(';')==-1):
@@ -168,15 +172,22 @@ def goto(x,y,z):
     print(' : ' + grbl_out.strip())#print the feedback
 
 def startdaq():
-    f = open("/data/3dscan/mylog.log","w")
-    subprocess.call(["/home/lhep/afi-adc64-without-watchdog/build/adc64-system/afi-adc64-system","--cli_mode","--data_dir","/data/3dscan","--event_number","15000"],stderr=f)
-    out = subprocess.check_output("grep -a \"MStreamFileWriter opened file: /data/3dscan/\" /data/3dscan/mylog.log | tail -c 30",shell=True)[:-1].decode()
-    while(not subprocess.call("grep \"AdcSelfTest failed\" /data/3dscan/mylog.log",shell=True,stdout=subprocess.DEVNULL,stderr=subprocess.DEVNULL)):
-        os.remove("/data/3dscan/"+str(out))
-        f.close()
+    if newreadout:
+        subprocess.call(["echo 1 > ~/.adc_watchdog_file"],shell=True)
+        time.sleep(data_taking_time)
+        out = subprocess.check_output("ls "+data_path+" -rt | tail -n 1",shell=True).decode().strip()
+        subprocess.call(["echo 0 > ~/.adc_watchdog_file"],shell=True)
+
+    else:
         f = open("/data/3dscan/mylog.log","w")
         subprocess.call(["/home/lhep/afi-adc64-without-watchdog/build/adc64-system/afi-adc64-system","--cli_mode","--data_dir","/data/3dscan","--event_number","15000"],stderr=f)
         out = subprocess.check_output("grep -a \"MStreamFileWriter opened file: /data/3dscan/\" /data/3dscan/mylog.log | tail -c 30",shell=True)[:-1].decode()
+        while(not subprocess.call("grep \"AdcSelfTest failed\" /data/3dscan/mylog.log",shell=True,stdout=subprocess.DEVNULL,stderr=subprocess.DEVNULL)):
+            os.remove("/data/3dscan/"+str(out))
+            f.close()
+            f = open("/data/3dscan/mylog.log","w")
+            subprocess.call(["/home/lhep/afi-adc64-without-watchdog/build/adc64-system/afi-adc64-system","--cli_mode","--data_dir","/data/3dscan","--event_number","15000"],stderr=f)
+            out = subprocess.check_output("grep -a \"MStreamFileWriter opened file: /data/3dscan/\" /data/3dscan/mylog.log | tail -c 30",shell=True)[:-1].decode()
     return out
 
 def mymain():
@@ -216,8 +227,8 @@ def mymain():
             print("Turning off motor for data taking")
             mycodesender("stopmotor.g")
             time.sleep(2)
-            #filename = startdaq()
-            #writefile(x,y,z,filename)
+            filename = startdaq()
+            writefile(x,y,z,filename)
             x += stepsize
             if stepcounter==1:
             	end_time = time.time()
@@ -233,13 +244,13 @@ def mymain():
             print("Turning off motor for data taking")
             mycodesender("stopmotor.g")
             time.sleep(2)
-            #filename = startdaq()
-            #writefile(x,y,z,filename)
+            filename = startdaq()
+            writefile(x,y,z,filename)
             x -= stepsize
         x += stepsize
         y += stepsize
     print("Scan finished in "+time.strftime("%H:%M:%S",time.gmtime(time.time()-start_time)))    
-    goto(x,y,100)
+    goto(x,y,200)
 
 def writefile(x,y,z,filename):
     f = open("data_position.log","a")
