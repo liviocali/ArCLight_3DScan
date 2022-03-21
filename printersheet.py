@@ -3,24 +3,27 @@ import time, datetime
 import argparse
 import subprocess
 import os
+import numpy as np
 
 # Open serial port
 #s = serial.Serial('/dev/tty.usbserial-AG0K0EZI',115200)
-s = serial.Serial('/dev/ttyUSB1',115200)
+usb_port = subprocess.check_output(['ls /dev/ttyUSB*'],shell=True).decode().strip()
+s = serial.Serial(usb_port,115200)
 print('Opening Serial Port')
 
 tilesizex = 300
 tilesizey = 280
-stepsize = 10 
-offsetx = 10 # Corner of the printerhead aligned with corner of the tile
-offsety = 85 # Corner of the printerhead aligned with corner of the tile
-offsetz = 20
+ngridx = 14
+stepsize = tilesizey/ngridx
+offsetx = 5 # Corner of the printerhead aligned with corner of the tile
+offsety = 50 # Corner of the printerhead aligned with corner of the tile
+offsetz = 185
 
 def removeComment(string):
-	if (string.find(';')==-1):
-		return string
-	else:
-		return string[:string.index(';')]
+    if (string.find(';')==-1):
+        return string
+    else:
+        return string[:string.index(';')]
  
 def mycord():#You can enter specific place where you want to go 
     
@@ -178,16 +181,16 @@ def startdaq():
 
 def mymain():
     print("Start initialisation")
-    mycodesender("preinit.g")
-    time.sleep(10)
+    #mycodesender("preinit.g")
+    #time.sleep(10)
     mycodesender('init.g')
     print("Wait 30s")
     time.sleep(25)
     xmax = offsetx + tilesizex
     ymax = offsety + tilesizey
     xmin = offsetx
-    x = offsetx+stepsize
-    y = offsety+stepsize
+    x = offsetx+stepsize/2.
+    y = offsety+stepsize/2.
     z = offsetz
     goto(x,y,z)
     time.sleep(10)
@@ -213,8 +216,8 @@ def mymain():
             print("Turning off motor for data taking")
             mycodesender("stopmotor.g")
             time.sleep(2)
-            filename = startdaq()
-            writefile(x,y,z,filename)
+            #filename = startdaq()
+            #writefile(x,y,z,filename)
             x += stepsize
             if stepcounter==1:
             	end_time = time.time()
@@ -230,8 +233,8 @@ def mymain():
             print("Turning off motor for data taking")
             mycodesender("stopmotor.g")
             time.sleep(2)
-            filename = startdaq()
-            writefile(x,y,z,filename)
+            #filename = startdaq()
+            #writefile(x,y,z,filename)
             x -= stepsize
         x += stepsize
         y += stepsize
