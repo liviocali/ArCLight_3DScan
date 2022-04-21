@@ -8,13 +8,11 @@
 #define startch 36
 #define endch 41
 #define monch1 
-#define startMon 43
-#define endMon 44
 
 bool debug = 0;
 //Float_t gain[] = {1040.26, 1148.56, 1103.742, 1115.02, 1036.44, 1085.66};
 Float_t gain[] = {480,480,480,480,480,480};
-Float_t mon_gain[] = {480,480};
+Float_t mon_gain = {480,480};
 TString data_path("/data/LRS/acl_teststand/3dscan/root_files/");
 
 Float_t arr_sum(Float_t arr[], int n)
@@ -35,9 +33,6 @@ void writeIntegral(const char* logfilename){
 	char filename[30];
 	Float_t LY_adc[endch-startch+1];
 	Float_t LY_nph[endch-startch+1];
-        Float_t LY_mon_adc[2];
-        Float_t LY_mon_nph[2];
-
 	Float_t LY_tot_adc;
 	Float_t LY_tot_nph;	
 
@@ -56,9 +51,7 @@ void writeIntegral(const char* logfilename){
 	t_out->Branch("y",&y);	
 	t_out->Branch("z",&z);	
 	t_out->Branch("LY_adc",&LY_adc,"LY_adc[6]/F");	
-	t_out->Branch("LY_nph",&LY_nph,"LY_nph[6]/F");
-        t_out->Branch("LY_mon_adc",&LY_adc,"LY_mon_adc[2]/F");  
-        t_out->Branch("LY_mon_nph",&LY_nph,"LY_mon_nph[2]/F");	
+	t_out->Branch("LY_nph",&LY_nph,"LY_nph[6]/F");	
 	t_out->Branch("LY_tot_adc",&LY_tot_adc);	
 	t_out->Branch("LY_tot_nph",&LY_tot_nph);	
 
@@ -92,28 +85,18 @@ void writeIntegral(const char* logfilename){
 
                 if(z==-99 || z==99){
 
-                        //Double_t mon1 = h_temp->GetMean();
+                        Double_t mon1 = h_temp->GetMean();
 
-	                for(int ch = startMon; ch<endMon; ch++){
-        	                Double_t max_bin_mon = tr->GetMaximum(Form("integral.ch%02d>>h_temp",ch));
-                	        tr->Draw(Form("integral.ch%02d>>h_temp2(10000,0,max_bin)",ch),Form("integral.ch%02d>0",ch));
-                	        TH1F *h_temp2 = (TH1F*)gDirectory->Get("h_temp2");
-                	        LY_mon_adc[ch-startMon] = h_temp2->GetMean();
-                	        //if(debug) printf("%f\n",LY_adc[ch]);
-                       		LY_mon_nph[ch-startMon] = LY_mon_adc[ch-startMon]/mon_gain[ch-startMon];
-                	}
-	                LY_tot_adc = arr_sum(LY_mon_adc,2);
-	                LY_tot_nph = arr_sum(LY_mon_nph,2);
+			
                 }
-
 
 		f_out->cd();
 		t_out->Fill();
-
-		//if(debug) printf("%f   %f\n",LY_tot_adc,LY_tot_nph);
+		if(debug) printf("%f   %f\n",LY_tot_adc,LY_tot_nph);
 	}
 	t_out->Write("t_out",TObject::kOverwrite);
 	f_out->Close();
 }
 
 
+≈

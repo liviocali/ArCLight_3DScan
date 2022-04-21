@@ -4,6 +4,7 @@ import argparse
 import subprocess
 import os
 import numpy as np
+import sys
 
 # Open serial port
 #s = serial.Serial('/dev/tty.usbserial-AG0K0EZI',115200)
@@ -14,10 +15,12 @@ print('Opening Serial Port')
 newreadout = True #Set if new or  old readout used
 tilesizex = 300
 tilesizey = 280
-ngridx = 14
-stepsize = tilesizey/ngridx
-offsetx = 5 # Corner of the printerhead aligned with corner of the tile
-offsety = 50 # Corner of the printerhead aligned with corner of the tile
+ngridy = 14
+stepsize = tilesizey/ngridy
+monitorx = 180
+monitory = 360
+offsetx = 7.5 # Corner of the printerhead aligned with corner of the tile
+offsety = 49.5 # Corner of the printerhead aligned with corner of the tile
 offsetz = 185
 data_path = '/data/LRS/acl_teststand/3dscan/data_files'
 data_taking_time = 15 #wait time for one data run
@@ -173,10 +176,32 @@ def goto(x,y,z):
 
 def startdaq():
     if newreadout:
+        print("EchoStart")
         subprocess.call(["echo 1 > ~/.adc_watchdog_file"],shell=True)
+        print("Echo1")
+        #for i in range(20):
+            #if subprocess.call(["cat ~/.adc_watchdog_file"],shell=True) == 1:
+            #    print("Echo1")
+            #    break
+            #elif i == 19:
+            #    sys.exit("Error in the turn on of the watchdog")
+            #else:
+            #    subprocess.call(["echo 1 > ~/.adc_watchdog_file"],shell=True)
         time.sleep(data_taking_time)
-        out = subprocess.check_output("ls "+data_path+" -rt | tail -n 1",shell=True).decode().strip()
         subprocess.call(["echo 0 > ~/.adc_watchdog_file"],shell=True)
+        print("Echo0")
+        #for i in range(20):
+        #    if subprocess.call(["cat ~/.adc_watchdog_file"],shell=True) == 0:
+        #        print("Echo0")
+        #        break
+        #    elif i == 19:
+        #    
+        #        sys.exit("Error in the turn off of the watchdog")
+        #    else:
+        #        subprocess.call(["echo 0 > ~/.adc_watchdog_file"],shell=True)
+        time.sleep(1)
+        out = subprocess.check_output("ls "+data_path+"/0cd913fb_*.data -rt | tail -n 1 | tail -c 30",shell=True).decode().strip()
+        time.sleep(1)
 
     else:
         f = open("/data/3dscan/mylog.log","w")
@@ -203,7 +228,7 @@ def mymain():
     x = offsetx+stepsize/2.
     y = offsety+stepsize/2.
     z = offsetz
-    goto(x,y,z)
+    #goto(x,y,z)
     time.sleep(10)
 
     while s.in_waiting >0:
@@ -213,8 +238,22 @@ def mymain():
 
     print("Initialisation over\n Ready\n")
     input("Press Enter to start data taking")
+    
+    #make monitor run
+    goto(180,180,offsetz)
+    time.sleep(20)
+    goto(monitorx,monitory,offsetz)
+    time.sleep(20)
+    mycodesender("stopmotor.g")
+    time.sleep(2)
+    filename = startdaq()
+    writefile(monitorx,monitory,-99,filename)
+    
+    #start scan
+    goto(x,y,z)
+    time.sleep(10)
     stepcounter=0
-    nsteps = (int(tilesizex/stepsize)-1) * (int(tilesizey/stepsize)-1)
+    nsteps = (int(tilesizex/stepsize)) * (int(tilesizey/stepsize))
     while x < xmax and y < ymax:
         while x < xmax:
             stepcounter+=1
@@ -226,7 +265,7 @@ def mymain():
             goto(x,y,z)
             print("Turning off motor for data taking")
             mycodesender("stopmotor.g")
-            time.sleep(2)
+            time.sleep(4)
             filename = startdaq()
             writefile(x,y,z,filename)
             x += stepsize
@@ -243,14 +282,25 @@ def mymain():
             goto(x,y,z)
             print("Turning off motor for data taking")
             mycodesender("stopmotor.g")
-            time.sleep(2)
+            time.sleep(4)
             filename = startdaq()
             writefile(x,y,z,filename)
             x -= stepsize
         x += stepsize
         y += stepsize
+    
+    #monitor run
+    goto(180,180,offsetz)
+    time.sleep(20)
+    goto(monitorx,monitory,offsetz)
+    time.sleep(20)
+    mycodesender("stopmotor.g")
+    time.sleep(4)
+    filename = startdaq()
+    writefile(monitorx,monitory,99,filename)
+    
     print("Scan finished in "+time.strftime("%H:%M:%S",time.gmtime(time.time()-start_time)))    
-    goto(x,y,200)
+    goto(300,300,200)
 
 def writefile(x,y,z,filename):
     f = open("data_position.log","a")
